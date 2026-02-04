@@ -11,8 +11,8 @@
 </head>
 <body class="bg-[#0f172a] text-white p-8 font-sans">
     
-    <audio id="notifBiasa" src="https://www.soundjay.com/buttons/beep-01a.mp3" preload="auto"></audio>
-    <audio id="notifSOS" src="https://www.soundjay.com/communication/get-mail-1.mp3" preload="auto"></audio>
+    <audio id="notifBiasa" src="https://www.soundjay.com/buttons/beep-07a.mp3" preload="auto"></audio>
+    <audio id="notifSOS" src="https://www.soundjay.com/buttons/beep-11.mp3" preload="auto"></audio>
 
     <div id="lock" class="fixed inset-0 bg-[#0f172a] z-50 flex flex-col items-center justify-center">
         <div class="bg-slate-800 p-10 rounded-[3rem] shadow-2xl text-center border-2 border-red-600/30 w-full max-w-sm">
@@ -42,7 +42,6 @@
         const DB_URL = "https://projectkecemasan-default-rtdb.asia-southeast1.firebasedatabase.app/laporan.json";
 
         function pancingSuara() {
-            // Memaksa browser mengizinkan audio
             const s1 = document.getElementById('notifBiasa');
             const s2 = document.getElementById('notifSOS');
             s1.play().then(() => s1.pause());
@@ -51,11 +50,10 @@
 
         function cekLogin() {
             if(document.getElementById('inputPin').value === "1234") {
-                pancingSuara(); // Pancing suara saat klik login
+                pancingSuara(); 
                 document.getElementById('lock').classList.add('hidden');
                 document.getElementById('dash').classList.remove('hidden');
                 
-                // Ambil data awal
                 fetch(DB_URL).then(res => res.json()).then(data => {
                     if(data) laporanLama = Object.keys(data);
                     tampilData(data ? Object.keys(data).map(key => ({ ...data[key], idFirebase: key })) : []);
@@ -74,13 +72,18 @@
                     if (!laporanLama.includes(key)) {
                         const laporan = data[key];
                         
-                        // LOGIKA TERTUKAR SESUAI REQUEST
+                        // LOGIKA PERBEDAAN SUARA
                         if (laporan.prioritas.includes("SOS")) {
-                            document.getElementById('notifSOS').play();
-                            alert("⚠️⚠️⚠️ PERINGATAN SOS DARI: " + laporan.nama.toUpperCase());
+                            // Suara Darurat SOS
+                            const audSOS = document.getElementById('notifSOS');
+                            audSOS.currentTime = 0;
+                            audSOS.play();
+                            alert("🚨🚨🚨 PERINGATAN DARURAT (SOS) DARI: " + laporan.nama.toUpperCase());
                         } else {
-                            // Laporan biasa suara kencang
-                            document.getElementById('notifBiasa').play();
+                            // Suara Laporan Biasa
+                            const audBiasa = document.getElementById('notifBiasa');
+                            audBiasa.currentTime = 0;
+                            audBiasa.play();
                         }
                         
                         laporanLama.push(key);
