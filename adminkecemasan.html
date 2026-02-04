@@ -2,200 +2,94 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Kecemasan - Dashboard Hanna</title>
+    <title>Admin Kecemasan - Hanna</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .emergency-glow { box-shadow: 0 0 20px rgba(220, 38, 38, 0.3); }
-        .done-glow { box-shadow: 0 0 15px rgba(16, 185, 129, 0.1); }
-        /* Styling tambahan untuk audio player agar serasi dengan tema dark */
         audio::-webkit-media-controls-panel { background-color: #1e293b; }
-        audio::-webkit-media-controls-current-time-display,
-        audio::-webkit-media-controls-time-remaining-display { color: #ffffff; }
     </style>
 </head>
 <body class="bg-[#0f172a] text-white p-8 font-sans">
-
     <audio id="notifSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
     <div id="lock" class="fixed inset-0 bg-[#0f172a] z-50 flex flex-col items-center justify-center">
-        <div class="bg-slate-800 p-10 rounded-[3rem] shadow-2xl text-center border-2 border-red-600/30 w-full max-w-sm mx-4">
-            <div class="text-6xl mb-6">🔐</div>
-            <h2 class="mb-2 font-black text-2xl tracking-tight text-white uppercase">Admin Access</h2>
-            <p class="text-slate-400 text-xs mb-8 font-bold tracking-widest uppercase">Hanna Nurhasanah Only</p>
-            <input type="password" id="inputPin" class="bg-slate-900 text-white p-5 rounded-2xl mb-4 text-center text-2xl font-black outline-none w-full border-2 border-slate-700 focus:border-red-500 transition-all tracking-[0.5em]" placeholder="****">
-            <button onclick="cekLogin()" class="bg-red-600 w-full py-5 rounded-2xl font-black hover:bg-red-700 transition shadow-xl shadow-red-900/40 uppercase tracking-[0.2em] active:scale-95">
-                Buka Panel 🚨
-            </button>
+        <div class="bg-slate-800 p-10 rounded-[3rem] shadow-2xl text-center border-2 border-red-600/30 w-full max-w-sm">
+            <h2 class="mb-8 font-black text-2xl uppercase italic">Hanna Access</h2>
+            <input type="password" id="inputPin" class="bg-slate-900 text-white p-5 rounded-2xl mb-4 text-center text-2xl font-black w-full border-2 border-slate-700 focus:border-red-500" placeholder="****">
+            <button onclick="cekLogin()" class="bg-red-600 w-full py-5 rounded-2xl font-black hover:bg-red-700 transition uppercase tracking-widest">Buka Panel</button>
         </div>
     </div>
 
     <div id="dash" class="hidden max-w-4xl mx-auto">
         <div class="flex justify-between items-end mb-10 border-b-2 border-red-600/20 pb-6">
-            <div>
-                <h1 class="text-4xl font-black text-red-600 italic tracking-tighter uppercase">Admin Page</h1>
-                <p class="text-slate-400 text-sm mt-1 uppercase tracking-widest font-bold italic">Admin Hanna Nurhasanah</p>
-            </div>
-            <button onclick="location.reload()" class="bg-slate-800 px-6 py-2 rounded-full text-[10px] font-black hover:bg-red-600 transition-all uppercase tracking-widest border border-slate-700">Logout</button>
+            <h1 class="text-4xl font-black text-red-600 italic uppercase">Admin Page</h1>
+            <button onclick="location.reload()" class="bg-slate-800 px-6 py-2 rounded-full text-[10px] font-black uppercase border border-slate-700">Logout</button>
         </div>
 
         <div class="flex gap-4 mb-8">
-            <button onclick="gantiTab('aktif')" id="tabAktif" class="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all border-2 border-red-600 bg-red-600 shadow-lg shadow-red-900/20">
-                🚨 Aktif (<span id="countAktif">0</span>)
-            </button>
-            <button onclick="gantiTab('selesai')" id="tabSelesai" class="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all border-2 border-slate-700 bg-slate-800 text-slate-400">
-                ✅ Selesai (<span id="countSelesai">0</span>)
-            </button>
+            <button onclick="gantiTab('aktif')" id="tabAktif" class="flex-1 py-4 rounded-2xl font-black border-2 border-red-600 bg-red-600">🚨 Aktif (<span id="countAktif">0</span>)</button>
+            <button onclick="gantiTab('selesai')" id="tabSelesai" class="flex-1 py-4 rounded-2xl font-black border-2 border-slate-700 bg-slate-800 text-slate-400">✅ Selesai (<span id="countSelesai">0</span>)</button>
         </div>
-        
         <div id="konten" class="space-y-6"></div>
     </div>
 
     <script>
         let tabSekarang = 'aktif';
-        const PIN_BENAR = "1234"; 
-        let jumlahDataLama = 0;
-        
         const DB_URL = "https://projectkecemasan-default-rtdb.asia-southeast1.firebasedatabase.app/laporan.json";
 
         function cekLogin() {
-            const input = document.getElementById('inputPin').value;
-            if(input === PIN_BENAR) {
-                const sound = document.getElementById('notifSound');
-                sound.play().then(() => {
-                    sound.pause();
-                    sound.currentTime = 0;
-                }).catch(e => console.log("Audio ready"));
-
+            if(document.getElementById('inputPin').value === "1234") {
                 document.getElementById('lock').classList.add('hidden');
                 document.getElementById('dash').classList.remove('hidden');
-                
-                ambilDataDariFirebase();
-                setInterval(ambilDataDariFirebase, 3000); 
-            } else {
-                alert("PIN Salah!");
-                document.getElementById('inputPin').value = "";
-            }
+                ambilData();
+                setInterval(ambilData, 3000);
+            } else { alert("PIN Salah!"); }
         }
 
-        function ambilDataDariFirebase() {
-            fetch(DB_URL)
-            .then(res => res.json())
-            .then(data => {
-                const list = data ? Object.keys(data).map(key => ({
-                    ...data[key],
-                    idFirebase: key
-                })) : [];
-                
-                if (list.length > jumlahDataLama) {
-                    if (jumlahDataLama !== 0) {
-                        const sound = document.getElementById('notifSound');
-                        sound.currentTime = 0;
-                        sound.play();
-                    }
-                    jumlahDataLama = list.length;
-                }
-                
+        function ambilData() {
+            fetch(DB_URL).then(res => res.json()).then(data => {
+                const list = data ? Object.keys(data).map(key => ({ ...data[key], idFirebase: key })) : [];
                 tampilData(list);
             });
         }
 
-        function gantiTab(tab) {
-            tabSekarang = tab;
-            const btnAktif = document.getElementById('tabAktif');
-            const btnSelesai = document.getElementById('tabSelesai');
-
-            if(tab === 'aktif') {
-                btnAktif.className = "flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all border-2 border-red-600 bg-red-600 text-white shadow-lg shadow-red-900/20";
-                btnSelesai.className = "flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all border-2 border-slate-700 bg-slate-800 text-slate-400";
-            } else {
-                btnSelesai.className = "flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all border-2 border-green-600 bg-green-600 text-white shadow-lg shadow-green-900/20";
-                btnAktif.className = "flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all border-2 border-slate-700 bg-slate-800 text-slate-400";
-            }
-            ambilDataDariFirebase();
-        }
+        function gantiTab(t) { tabSekarang = t; ambilData(); }
 
         function tampilData(list) {
-            const konten = document.getElementById('konten');
             const dataAktif = list.filter(l => !l.sudahDitangani);
             const dataSelesai = list.filter(l => l.sudahDitangani);
-            
             document.getElementById('countAktif').innerText = dataAktif.length;
             document.getElementById('countSelesai').innerText = dataSelesai.length;
 
             const dataTampil = tabSekarang === 'aktif' ? dataAktif : dataSelesai;
-
-            if(dataTampil.length === 0) {
-                konten.innerHTML = `<div class="text-center py-20 bg-slate-800/30 rounded-[2.5rem] border-2 border-dashed border-slate-700 text-slate-500 font-bold uppercase tracking-widest text-xs">Belum ada laporan ${tabSekarang}</div>`;
-                return;
-            }
-
-            konten.innerHTML = dataTampil.reverse().map((l) => {
-                let badgeClass = "bg-slate-700 text-slate-300";
-                if(l.prioritas.includes('AMBULANS')) badgeClass = "bg-blue-600 text-white shadow-lg shadow-blue-900/40"; 
-                if(l.prioritas.includes('DAMKAR')) badgeClass = "bg-orange-500 text-white shadow-lg shadow-orange-900/40"; 
-                if(l.prioritas.includes('SAR')) badgeClass = "bg-yellow-400 text-black shadow-lg shadow-yellow-900/20"; 
-                if(l.prioritas.includes('SOS')) badgeClass = "bg-red-600 text-white animate-pulse border-2 border-white shadow-lg shadow-red-900/40";
-
-                const linkMaps = (l.lokasi && l.lokasi !== "Lokasi tidak diizinkan") 
-                    ? `https://www.google.com/maps?q=${l.lokasi}` 
-                    : "#";
-                
-                // Menyiapkan tampilan WhatsApp
-                const waLink = l.whatsapp ? `https://wa.me/${l.whatsapp.startsWith('0') ? '62'+l.whatsapp.slice(1) : l.whatsapp}` : "#";
-
+            document.getElementById('konten').innerHTML = dataTampil.reverse().map(l => {
+                const waLink = l.whatsapp && l.whatsapp !== "-" ? `https://wa.me/${l.whatsapp.startsWith('0') ? '62'+l.whatsapp.slice(1) : l.whatsapp}` : null;
                 return `
-                <div class="relative overflow-hidden p-6 rounded-[2.5rem] border-2 transition-all duration-500 ${l.sudahDitangani ? 'bg-slate-800/40 border-slate-700 done-glow' : 'bg-slate-800 border-red-600/40 emergency-glow'}">
-                    <div class="flex justify-between items-center mb-4">
-                        <span class="text-[10px] font-black uppercase tracking-widest text-slate-500">${l.waktu}</span>
-                        <span class="text-[9px] px-3 py-1 rounded-full font-black uppercase tracking-widest ${badgeClass}">
-                            ${l.prioritas}
-                        </span>
+                <div class="p-6 rounded-[2.5rem] border-2 bg-slate-800 ${l.sudahDitangani ? 'border-slate-700' : 'border-red-600/40 emergency-glow'}">
+                    <div class="flex justify-between mb-4">
+                        <span class="text-[10px] text-slate-500 font-black">${l.waktu}</span>
+                        <span class="text-[9px] px-3 py-1 rounded-full bg-red-600 font-black uppercase">${l.prioritas}</span>
                     </div>
-                    
                     <div class="mb-4">
                         <div class="flex items-center gap-2 mb-1">
-                            <span class="text-[10px] font-black text-red-500 uppercase italic">👤 Pelapor: ${l.nama || 'Anonim'}</span>
-                            ${l.whatsapp ? `<a href="${waLink}" target="_blank" class="bg-green-600 text-white text-[8px] px-2 py-0.5 rounded-full font-bold">💬 CHAT WA</a>` : ''}
+                            <span class="text-[10px] text-red-500 font-black italic">👤 Pelapor: ${l.nama}</span>
+                            ${waLink ? `<a href="${waLink}" target="_blank" class="bg-green-600 text-[8px] px-2 py-1 rounded-lg font-black">💬 CHAT WA</a>` : ''}
                         </div>
-                        <h3 class="text-2xl font-bold ${l.sudahDitangani ? 'text-slate-500 line-through' : 'text-white'}">
-                            "${l.teks}"
-                        </h3>
+                        <h3 class="text-2xl font-bold">"${l.teks}"</h3>
                     </div>
-
-                    ${l.suara ? `
-                    <div class="mb-6 p-3 bg-slate-900/50 rounded-2xl border border-slate-700">
-                        <p class="text-[8px] font-black uppercase tracking-widest text-slate-500 mb-2">🔊 Rekaman Suara Kejadian:</p>
-                        <audio controls class="w-full h-8">
-                            <source src="${l.suara}" type="audio/mp3">
-                        </audio>
-                    </div>
-                    ` : ''}
-
+                    ${l.suara ? `<div class="mb-4 p-3 bg-slate-900 rounded-2xl border border-slate-700"><p class="text-[8px] mb-2 font-black uppercase text-slate-500">🔊 Rekaman Suara:</p><audio controls class="w-full h-8"><source src="${l.suara}" type="audio/mp3"></audio></div>` : ''}
                     <div class="flex justify-between items-center pt-4 border-t border-slate-700/50">
-                        <a href="${linkMaps}" target="_blank" class="${linkMaps === '#' ? 'hidden' : 'text-blue-400 text-[10px] font-black uppercase hover:underline flex items-center gap-1'}">📍 Lihat Lokasi</a>
-                        <span class="${linkMaps !== '#' ? 'hidden' : 'text-slate-600 text-[10px] font-black uppercase'}">📍 Lokasi Gagal Didapat</span>
-                        
-                        ${!l.sudahDitangani ? 
-                            `<button onclick="tandaiSelesai('${l.idFirebase}')" class="bg-white text-black hover:bg-green-600 hover:text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-md">
-                                Selesai Ditangani
-                            </button>` : 
-                            `<span class="text-green-500 font-black uppercase text-[9px] tracking-widest">✅ Operasi Selesai</span>`
-                        }
+                        <a href="https://www.google.com/maps?q=${l.lokasi}" target="_blank" class="text-blue-400 text-[10px] font-black uppercase">📍 Lihat Lokasi</a>
+                        ${!l.sudahDitangani ? `<button onclick="selesai('${l.idFirebase}')" class="bg-white text-black px-6 py-2 rounded-xl text-[10px] font-black">Selesai Ditangani</button>` : '<span class="text-green-500 text-[9px] font-black uppercase">✅ Selesai</span>'}
                     </div>
-                </div>
-                `;
+                </div>`;
             }).join('');
         }
 
-        function tandaiSelesai(idFirebase) {
-            const URL_UPDATE = `https://projectkecemasan-default-rtdb.asia-southeast1.firebasedatabase.app/laporan/${idFirebase}.json`;
-            
-            fetch(URL_UPDATE, {
-                method: 'PATCH',
-                body: JSON.stringify({ sudahDitangani: true })
-            }).then(() => {
-                ambilDataDariFirebase();
-            });
+        function selesai(id) {
+            fetch(`https://projectkecemasan-default-rtdb.asia-southeast1.firebasedatabase.app/laporan/${id}.json`, {
+                method: 'PATCH', body: JSON.stringify({ sudahDitangani: true })
+            }).then(() => ambilData());
         }
     </script>
 </body>
