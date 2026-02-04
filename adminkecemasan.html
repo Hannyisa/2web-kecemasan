@@ -36,12 +36,11 @@
 
     <script>
         let tabSekarang = 'aktif';
-        let jumlahLaporanLama = 0; // Untuk mendeteksi laporan baru
+        let jumlahLaporanLama = 0; 
         const DB_URL = "https://projectkecemasan-default-rtdb.asia-southeast1.firebasedatabase.app/laporan.json";
 
         function cekLogin() {
             if(document.getElementById('inputPin').value === "1234") {
-                // "Pancing" audio agar bisa berbunyi otomatis setelah interaksi pertama
                 document.getElementById('notifBiasa').play().then(() => {
                     document.getElementById('notifBiasa').pause();
                 });
@@ -57,18 +56,14 @@
             fetch(DB_URL).then(res => res.json()).then(data => {
                 const list = data ? Object.keys(data).map(key => ({ ...data[key], idFirebase: key })) : [];
                 
-                // CEK JIKA ADA LAPORAN BARU
                 if (list.length > jumlahLaporanLama) {
-                    if (jumlahLaporanLama !== 0) { // Biar tidak bunyi pas pertama kali buka
+                    if (jumlahLaporanLama !== 0) {
                         const laporanTerbaru = list[list.length - 1];
-                        
-                        // CEK JIKA SOS
                         if (laporanTerbaru.prioritas.includes("SOS") || laporanTerbaru.teks.includes("SOS")) {
                             document.getElementById('notifSOS').play();
                             alert("⚠️ PERINGATAN!!! ADA LAPORAN SOS MASUK SEGERA CEK!!!");
                         } else {
                             document.getElementById('notifBiasa').play();
-                            console.log("Ada laporan baru masuk...");
                         }
                     }
                     jumlahLaporanLama = list.length;
@@ -88,7 +83,11 @@
 
             const dataTampil = tabSekarang === 'aktif' ? dataAktif : dataSelesai;
             document.getElementById('konten').innerHTML = dataTampil.reverse().map(l => {
-                const waLink = l.whatsapp && l.whatsapp !== "-" ? `https://wa.me/${l.whatsapp.startsWith('0') ? '62'+l.whatsapp.slice(1) : l.whatsapp}` : null;
+                
+                // DISINI PERUBAHANNYA: Menggunakan 'nomorPelapor' sesuai dengan index.html
+                const noHP = l.nomorPelapor || "";
+                const waLink = noHP ? `https://wa.me/${noHP.startsWith('0') ? '62'+noHP.slice(1) : noHP}` : null;
+                
                 return `
                 <div class="p-6 rounded-[2.5rem] border-2 bg-slate-800 ${l.sudahDitangani ? 'border-slate-700' : 'border-red-600/40 emergency-glow'}">
                     <div class="flex justify-between mb-4">
@@ -96,9 +95,10 @@
                         <span class="text-[9px] px-3 py-1 rounded-full bg-red-600 font-black uppercase">${l.prioritas}</span>
                     </div>
                     <div class="mb-4">
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="text-[10px] text-red-500 font-black italic">👤 Pelapor: ${l.nama}</span>
-                            ${waLink ? `<a href="${waLink}" target="_blank" class="bg-green-600 text-[8px] px-2 py-1 rounded-lg font-black">💬 CHAT WA</a>` : ''}
+                        <div class="flex flex-col gap-1 mb-2">
+                            <span class="text-[11px] text-red-500 font-black italic">👤 Pelapor: ${l.nama}</span>
+                            <span class="text-[11px] text-emerald-400 font-black italic">📞 No. HP: ${noHP || '-'}</span>
+                            ${waLink ? `<a href="${waLink}" target="_blank" class="w-max bg-green-600 text-[8px] px-3 py-1 mt-1 rounded-lg font-black uppercase shadow-lg">Hubungi WhatsApp</a>` : ''}
                         </div>
                         <h3 class="text-2xl font-bold">"${l.teks}"</h3>
                     </div>
