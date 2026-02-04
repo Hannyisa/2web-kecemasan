@@ -7,6 +7,10 @@
     <style>
         .emergency-glow { box-shadow: 0 0 20px rgba(220, 38, 38, 0.3); }
         .done-glow { box-shadow: 0 0 15px rgba(16, 185, 129, 0.1); }
+        /* Styling tambahan untuk audio player agar serasi dengan tema dark */
+        audio::-webkit-media-controls-panel { background-color: #1e293b; }
+        audio::-webkit-media-controls-current-time-display,
+        audio::-webkit-media-controls-time-remaining-display { color: #ffffff; }
     </style>
 </head>
 <body class="bg-[#0f172a] text-white p-8 font-sans">
@@ -51,7 +55,6 @@
         const PIN_BENAR = "1234"; 
         let jumlahDataLama = 0;
         
-        // Perbaikan: Menghilangkan double slash //
         const DB_URL = "https://projectkecemasan-default-rtdb.asia-southeast1.firebasedatabase.app/laporan.json";
 
         function cekLogin() {
@@ -133,10 +136,12 @@
                 if(l.prioritas.includes('SAR')) badgeClass = "bg-yellow-400 text-black shadow-lg shadow-yellow-900/20"; 
                 if(l.prioritas.includes('SOS')) badgeClass = "bg-red-600 text-white animate-pulse border-2 border-white shadow-lg shadow-red-900/40";
 
-                // PERBAIKAN: Menggunakan ${l.lokasi} agar link maps benar
                 const linkMaps = (l.lokasi && l.lokasi !== "Lokasi tidak diizinkan") 
                     ? `https://www.google.com/maps?q=${l.lokasi}` 
                     : "#";
+                
+                // Menyiapkan tampilan WhatsApp
+                const waLink = l.whatsapp ? `https://wa.me/${l.whatsapp.startsWith('0') ? '62'+l.whatsapp.slice(1) : l.whatsapp}` : "#";
 
                 return `
                 <div class="relative overflow-hidden p-6 rounded-[2.5rem] border-2 transition-all duration-500 ${l.sudahDitangani ? 'bg-slate-800/40 border-slate-700 done-glow' : 'bg-slate-800 border-red-600/40 emergency-glow'}">
@@ -147,15 +152,27 @@
                         </span>
                     </div>
                     
-                    <div class="mb-6">
-                        <span class="text-[10px] font-black text-red-500 uppercase italic">👤 Pelapor: ${l.nama || 'Anonim'}</span>
-                        <h3 class="text-2xl font-bold mt-1 ${l.sudahDitangani ? 'text-slate-500 line-through' : 'text-white'}">
+                    <div class="mb-4">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-[10px] font-black text-red-500 uppercase italic">👤 Pelapor: ${l.nama || 'Anonim'}</span>
+                            ${l.whatsapp ? `<a href="${waLink}" target="_blank" class="bg-green-600 text-white text-[8px] px-2 py-0.5 rounded-full font-bold">💬 CHAT WA</a>` : ''}
+                        </div>
+                        <h3 class="text-2xl font-bold ${l.sudahDitangani ? 'text-slate-500 line-through' : 'text-white'}">
                             "${l.teks}"
                         </h3>
                     </div>
 
+                    ${l.suara ? `
+                    <div class="mb-6 p-3 bg-slate-900/50 rounded-2xl border border-slate-700">
+                        <p class="text-[8px] font-black uppercase tracking-widest text-slate-500 mb-2">🔊 Rekaman Suara Kejadian:</p>
+                        <audio controls class="w-full h-8">
+                            <source src="${l.suara}" type="audio/mp3">
+                        </audio>
+                    </div>
+                    ` : ''}
+
                     <div class="flex justify-between items-center pt-4 border-t border-slate-700/50">
-                        <a href="${linkMaps}" target="_blank" class="${linkMaps === '#' ? 'hidden' : 'text-blue-400 text-[10px] font-black uppercase hover:underline flex items-center gap-1'}">📍 Lokasi Peta</a>
+                        <a href="${linkMaps}" target="_blank" class="${linkMaps === '#' ? 'hidden' : 'text-blue-400 text-[10px] font-black uppercase hover:underline flex items-center gap-1'}">📍 Lihat Lokasi</a>
                         <span class="${linkMaps !== '#' ? 'hidden' : 'text-slate-600 text-[10px] font-black uppercase'}">📍 Lokasi Gagal Didapat</span>
                         
                         ${!l.sudahDitangani ? 
