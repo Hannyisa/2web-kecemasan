@@ -42,21 +42,16 @@
         const DB_URL = "https://projectkecemasan-default-rtdb.asia-southeast1.firebasedatabase.app/laporan.json";
 
         function pancingSuara() {
-            // Memaksa browser mengizinkan audio setelah interaksi user
+            // Memaksa browser mengaktifkan audio engine melalui interaksi klik user
             const b = document.getElementById('notifBiasa');
             const s = document.getElementById('notifSOS');
-            
-            b.muted = false;
-            s.muted = false;
-            
-            b.play().then(() => { b.pause(); b.currentTime = 0; }).catch(e => console.log("Gagal pancing biasa"));
-            s.play().then(() => { s.pause(); s.currentTime = 0; }).catch(e => console.log("Gagal pancing SOS"));
+            b.play().then(() => { b.pause(); b.currentTime = 0; }).catch(e => console.log("Izin audio gagal"));
+            s.play().then(() => { s.pause(); s.currentTime = 0; }).catch(e => console.log("Izin audio gagal"));
         }
 
         function cekLogin() {
             if(document.getElementById('inputPin').value === "1234") {
-                pancingSuara(); // Wajib dipicu klik tombol
-                
+                pancingSuara(); // Wajib dipicu saat klik tombol Login
                 document.getElementById('lock').classList.add('hidden');
                 document.getElementById('dash').classList.remove('hidden');
                 
@@ -78,16 +73,18 @@
                     if (!laporanLama.includes(key)) {
                         const laporan = data[key];
                         
-                        // LOGIKA SUARA
+                        // LOGIKA PEMISAH SUARA
                         if (laporan.prioritas.includes("SOS")) {
+                            // SUARA DARURAT (SIRINE)
                             const audSOS = document.getElementById('notifSOS');
                             audSOS.currentTime = 0;
-                            audSOS.play();
-                            alert("🚨🚨🚨 PERINGATAN SOS: " + laporan.nama.toUpperCase());
+                            audSOS.play().catch(e => console.log("Gagal putar SOS"));
+                            alert("⚠️⚠️⚠️ PERINGATAN SOS DARI: " + laporan.nama.toUpperCase());
                         } else {
+                            // SUARA BIASA (NOTIFIKASI SANTAI)
                             const audBiasa = document.getElementById('notifBiasa');
                             audBiasa.currentTime = 0;
-                            audBiasa.play();
+                            audBiasa.play().catch(e => console.log("Gagal putar Biasa"));
                         }
                         
                         laporanLama.push(key);
