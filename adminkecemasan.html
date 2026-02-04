@@ -11,8 +11,8 @@
 </head>
 <body class="bg-[#0f172a] text-white p-8 font-sans">
     
-    <audio id="notifBiasa" src="https://raw.githubusercontent.com/rafaelreis-hotmart/Audio-Samples/master/notification.mp3" preload="auto"></audio>
-    <audio id="notifSOS" src="https://raw.githubusercontent.com/rafaelreis-hotmart/Audio-Samples/master/danger-alarm.mp3" preload="auto"></audio>
+    <audio id="notifBiasa" src="https://raw.githubusercontent.com/rafaelreis-hotmart/Audio-Samples/master/danger-alarm.mp3" preload="auto"></audio>
+    <audio id="notifSOS" src="https://raw.githubusercontent.com/rafaelreis-hotmart/Audio-Samples/master/notification.mp3" preload="auto"></audio>
 
     <div id="lock" class="fixed inset-0 bg-[#0f172a] z-50 flex flex-col items-center justify-center">
         <div class="bg-slate-800 p-10 rounded-[3rem] shadow-2xl text-center border-2 border-red-600/30 w-full max-w-sm">
@@ -38,12 +38,12 @@
 
     <script>
         let tabSekarang = 'aktif';
-        let laporanLama = []; // Simpan ID laporan agar tidak bunyi terus saat refresh
+        let laporanLama = []; 
         const DB_URL = "https://projectkecemasan-default-rtdb.asia-southeast1.firebasedatabase.app/laporan.json";
 
         function cekLogin() {
             if(document.getElementById('inputPin').value === "1234") {
-                // WAJIB: Bunyikan suara sebentar agar browser mengizinkan audio kedepannya
+                // Pancing audio
                 document.getElementById('notifBiasa').play().then(() => {
                     document.getElementById('notifBiasa').pause();
                 });
@@ -51,13 +51,11 @@
                 document.getElementById('lock').classList.add('hidden');
                 document.getElementById('dash').classList.remove('hidden');
                 
-                // Ambil data pertama kali tanpa suara
                 fetch(DB_URL).then(res => res.json()).then(data => {
                     if(data) laporanLama = Object.keys(data);
                     tampilData(data ? Object.keys(data).map(key => ({ ...data[key], idFirebase: key })) : []);
                 });
 
-                // Cek data baru setiap 3 detik
                 setInterval(ambilDataBaru, 3000);
             } else { alert("PIN Salah!"); }
         }
@@ -68,20 +66,21 @@
                 const keys = Object.keys(data);
                 const list = keys.map(key => ({ ...data[key], idFirebase: key }));
 
-                // CEK JIKA ADA ID BARU YANG BELUM PERNAH ADA
                 keys.forEach(key => {
                     if (!laporanLama.includes(key)) {
                         const laporan = data[key];
                         
-                        // JIKA SOS
+                        // JIKA SOS (Pakai notif singkat sekarang)
                         if (laporan.prioritas.includes("SOS")) {
-                            document.getElementById('notifSOS').play().catch(e => console.log("Audio diblokir browser"));
-                            alert("⚠️⚠️⚠️ PERINGATAN!!! ADA LAPORAN SOS DARI " + laporan.nama.toUpperCase() + " !!!");
-                        } else {
-                            document.getElementById('notifBiasa').play().catch(e => console.log("Audio diblokir browser"));
+                            document.getElementById('notifSOS').play().catch(e => console.log("Audio Error"));
+                            alert("⚠️⚠️⚠️ PERINGATAN SOS!!! DARI: " + laporan.nama.toUpperCase());
+                        } 
+                        // JIKA BIASA (Pakai alarm kencang sekarang)
+                        else {
+                            document.getElementById('notifBiasa').play().catch(e => console.log("Audio Error"));
                         }
                         
-                        laporanLama.push(key); // Tandai sudah diproses
+                        laporanLama.push(key);
                     }
                 });
 
