@@ -44,7 +44,6 @@
                 document.getElementById('notifBiasa').play().then(() => {
                     document.getElementById('notifBiasa').pause();
                 });
-                
                 document.getElementById('lock').classList.add('hidden');
                 document.getElementById('dash').classList.remove('hidden');
                 ambilData();
@@ -55,7 +54,6 @@
         function ambilData() {
             fetch(DB_URL).then(res => res.json()).then(data => {
                 const list = data ? Object.keys(data).map(key => ({ ...data[key], idFirebase: key })) : [];
-                
                 if (list.length > jumlahLaporanLama) {
                     if (jumlahLaporanLama !== 0) {
                         const laporanTerbaru = list[list.length - 1];
@@ -68,7 +66,6 @@
                     }
                     jumlahLaporanLama = list.length;
                 }
-                
                 tampilData(list);
             });
         }
@@ -84,7 +81,7 @@
             const dataTampil = tabSekarang === 'aktif' ? dataAktif : dataSelesai;
             document.getElementById('konten').innerHTML = dataTampil.reverse().map(l => {
                 
-                // DISINI PERUBAHANNYA: Menggunakan 'nomorPelapor' sesuai dengan index.html
+                // MENGAMBIL NOMOR DARI DATABASE
                 const noHP = l.nomorPelapor || "";
                 const waLink = noHP ? `https://wa.me/${noHP.startsWith('0') ? '62'+noHP.slice(1) : noHP}` : null;
                 
@@ -97,8 +94,11 @@
                     <div class="mb-4">
                         <div class="flex flex-col gap-1 mb-2">
                             <span class="text-[11px] text-red-500 font-black italic">👤 Pelapor: ${l.nama}</span>
-                            <span class="text-[11px] text-emerald-400 font-black italic">📞 No. HP: ${noHP || '-'}</span>
-                            ${waLink ? `<a href="${waLink}" target="_blank" class="w-max bg-green-600 text-[8px] px-3 py-1 mt-1 rounded-lg font-black uppercase shadow-lg">Hubungi WhatsApp</a>` : ''}
+                            
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="text-[11px] text-emerald-400 font-black italic">📞 No. HP: ${noHP || '-'}</span>
+                                ${waLink ? `<a href="${waLink}" target="_blank" class="bg-green-600 text-[8px] px-2 py-1 rounded-lg font-black uppercase">Hubungi WA</a>` : ''}
+                            </div>
                         </div>
                         <h3 class="text-2xl font-bold">"${l.teks}"</h3>
                     </div>
