@@ -13,6 +13,9 @@
         }
         .progress-line { animation: grow 3s ease-in-out forwards; }
         @keyframes grow { from { width: 0%; } to { width: 100%; } }
+        
+        /* Gaya tambahan untuk fitur rekam */
+        .recording { animation: pulse-red 1s infinite; background-color: #fee2e2; border-color: #ef4444; }
     </style>
 </head>
 <body class="bg-slate-100 flex items-center justify-center min-h-screen p-4 font-sans relative">
@@ -40,9 +43,15 @@
                 <p class="text-red-600 mb-6 text-[10px] font-black uppercase tracking-[0.3em]">Layanan Darurat Kita</p>
                 
                 <div class="space-y-4">
-                    <div>
-                        <label class="block text-[10px] font-black text-slate-400 mb-2 uppercase ml-4">Identitas Pelapor</label>
-                        <input type="text" id="namaPelapor" class="w-full border-2 border-slate-100 rounded-2xl p-4 outline-none focus:border-red-500 transition-all bg-slate-50 font-semibold" placeholder="Nama Anda...">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[10px] font-black text-slate-400 mb-2 uppercase ml-4">Nama Pelapor</label>
+                            <input type="text" id="namaPelapor" class="w-full border-2 border-slate-100 rounded-2xl p-4 outline-none focus:border-red-500 transition-all bg-slate-50 font-semibold text-xs" placeholder="Nama...">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-slate-400 mb-2 uppercase ml-4">WhatsApp</label>
+                            <input type="number" id="waPelapor" class="w-full border-2 border-slate-100 rounded-2xl p-4 outline-none focus:border-red-500 transition-all bg-slate-50 font-semibold text-xs" placeholder="08xxx">
+                        </div>
                     </div>
 
                     <div>
@@ -61,8 +70,15 @@
                     </div>
 
                     <div>
-                        <label class="block text-[10px] font-black text-slate-400 mb-2 uppercase ml-4">Detail Kejadian</label>
-                        <textarea id="pesan" rows="3" class="w-full border-2 border-slate-100 rounded-2xl p-4 outline-none focus:border-red-500 transition-all bg-slate-50 font-semibold text-sm" placeholder="Ceritakan singkat..."></textarea>
+                        <label class="block text-[10px] font-black text-slate-400 mb-2 uppercase ml-4">Detail Kejadian & Suara</label>
+                        <textarea id="pesan" rows="2" class="w-full border-2 border-slate-100 rounded-2xl p-4 outline-none focus:border-red-500 transition-all bg-slate-50 font-semibold text-sm" placeholder="Ceritakan singkat..."></textarea>
+                        
+                        <div class="mt-2 flex items-center gap-2">
+                            <button id="btnRekam" onclick="toggleRekaman()" class="flex-1 border-2 border-dashed border-slate-300 rounded-xl py-2 text-[10px] font-bold text-slate-500 flex items-center justify-center gap-2 transition-all">
+                                <span id="micIcon">🎤</span> <span id="textRekam">Rekam Suara Kejadian</span>
+                            </button>
+                            <div id="audioPlayback" class="hidden text-xs bg-green-100 text-green-700 px-3 py-2 rounded-xl font-bold">Terpilih ✅</div>
+                        </div>
                     </div>
                     
                     <button onclick="prosesLaporan()" class="w-full bg-red-600 text-white font-black py-4 rounded-2xl hover:bg-red-700 transition shadow-xl shadow-red-200 active:scale-95 uppercase tracking-widest text-sm">
@@ -83,8 +99,47 @@
 
     <script>
         let armadaTerpilih = "";
+        let mediaRecorder;
+        let audioChunks = [];
+        let audioBase64 = ""; // Untuk menyimpan data suara
         
         const DB_URL = "https://projectkecemasan-default-rtdb.asia-southeast1.firebasedatabase.app/laporan.json";
+
+        // Fungsi Rekam Suara
+        async function toggleRekaman() {
+            const btn = document.getElementById('btnRekam');
+            const text = document.getElementById('textRekam');
+            const mic = document.getElementById('micIcon');
+            const playback = document.getElementById('audioPlayback');
+
+            if (!mediaRecorder || mediaRecorder.state === "inactive") {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                    // Ubah blob ke Base64 agar bisa disimpan di Firebase Realtime DB
+                    const reader = new FileReader();
+                    reader.readAsDataURL(audioBlob);
+                    reader.onloadend = () => {
+                        audioBase64 = reader.result;
+                        playback.classList.remove('hidden');
+                    };
+                };
+
+                mediaRecorder.start();
+                btn.classList.add('recording');
+                text.innerText = "Berhenti & Simpan";
+                mic.innerText = "🛑";
+            } else {
+                mediaRecorder.stop();
+                btn.classList.remove('recording');
+                text.innerText = "Rekam Ulang";
+                mic.innerText = "🔄";
+            }
+        }
 
         function setArmada(jenis) {
             armadaTerpilih = jenis;
@@ -138,31 +193,34 @@
 
         function prosesLaporan() {
             const nama = document.getElementById('namaPelapor').value;
+            const wa = document.getElementById('waPelapor').value;
             const pesan = document.getElementById('pesan').value;
-            if(!nama || !pesan) return alert("Isi Nama dan Kejadian!");
+            if(!nama || !pesan || !wa) return alert("Isi Nama, WhatsApp, dan Kejadian!");
 
             let status = armadaTerpilih ? `🚨 BUTUH ${armadaTerpilih}` : "Normal";
-            kirimKeFirebase(nama, pesan, status);
+            kirimKeFirebase(nama, pesan, status, wa);
         }
 
         function sosInstan() {
             const nama = document.getElementById('namaPelapor').value || "Anonim (SOS)";
+            const wa = document.getElementById('waPelapor').value || "-";
             const pesan = "⚠️ GAWAT DARURAT! PELAPOR BUTUH BANTUAN SEGERA!";
             const status = "🔥 SOS: SEMUAL ARMADA";
 
             if(confirm("Kirim sinyal SOS sekarang?")) {
-                kirimKeFirebase(nama, pesan, status);
+                kirimKeFirebase(nama, pesan, status, wa);
             }
         }
 
-        function kirimKeFirebase(nama, pesan, status) {
-            // Menaikkan timeout ke 20 detik (20000ms) agar GPS punya waktu mencari sinyal
+        function kirimKeFirebase(nama, pesan, status, wa) {
             const gpsOptions = { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 };
 
             navigator.geolocation.getCurrentPosition((pos) => {
                 const data = { 
                     nama: nama,
+                    whatsapp: wa,
                     teks: pesan, 
+                    suara: audioBase64, // Menyimpan string audio
                     prioritas: status, 
                     waktu: new Date().toLocaleString('id-ID'), 
                     lokasi: `${pos.coords.latitude},${pos.coords.longitude}`,
@@ -178,7 +236,7 @@
 
             }, (err) => { 
                 const data = { 
-                    nama: nama, teks: pesan, prioritas: status, 
+                    nama: nama, whatsapp: wa, teks: pesan, suara: audioBase64, prioritas: status, 
                     waktu: new Date().toLocaleString('id-ID'), 
                     lokasi: "Lokasi tidak diizinkan", sudahDitangani: false 
                 };
