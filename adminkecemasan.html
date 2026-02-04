@@ -11,15 +11,14 @@
 </head>
 <body class="bg-[#0f172a] text-white p-8 font-sans">
     
-    <audio id="notifBiasa" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
-    <audio id="notifSOS" src="https://actions.google.com/sounds/v1/alarms/alarm_clock_ringing_rising.ogg" preload="auto"></audio>
+    <audio id="notifBiasa" src="https://cdn.pixabay.com/audio/2025/01/17/audio_323284050b.mp3" preload="auto"></audio>
+    <audio id="notifSOS" src="https://cdn.pixabay.com/audio/2024/07/20/audio_f5351a610f.mp3" preload="auto"></audio>
 
     <div id="lock" class="fixed inset-0 bg-[#0f172a] z-50 flex flex-col items-center justify-center">
         <div class="bg-slate-800 p-10 rounded-[3rem] shadow-2xl text-center border-2 border-red-600/30 w-full max-w-sm">
             <h2 class="mb-8 font-black text-2xl uppercase italic">Hanna Access</h2>
-            <p class="text-[10px] text-yellow-500 mb-4 uppercase font-black animate-pulse">⚠️ KLIK TOMBOL UNTUK AKTIFKAN ALARM</p>
             <input type="password" id="inputPin" class="bg-slate-900 text-white p-5 rounded-2xl mb-4 text-center text-2xl font-black w-full border-2 border-slate-700 focus:border-red-500" placeholder="****">
-            <button onclick="cekLogin()" class="bg-red-600 w-full py-5 rounded-2xl font-black hover:bg-red-700 transition uppercase tracking-widest">Buka & Aktifkan Suara</button>
+            <button onclick="cekLogin()" class="bg-red-600 w-full py-5 rounded-2xl font-black hover:bg-red-700 transition uppercase tracking-widest">Buka Panel</button>
         </div>
     </div>
 
@@ -42,16 +41,16 @@
         const DB_URL = "https://projectkecemasan-default-rtdb.asia-southeast1.firebasedatabase.app/laporan.json";
 
         function pancingSuara() {
-            // Memaksa browser mengaktifkan audio engine melalui interaksi klik user
             const b = document.getElementById('notifBiasa');
             const s = document.getElementById('notifSOS');
-            b.play().then(() => { b.pause(); b.currentTime = 0; }).catch(e => console.log("Izin audio gagal"));
-            s.play().then(() => { s.pause(); s.currentTime = 0; }).catch(e => console.log("Izin audio gagal"));
+            // Menjalankan play-pause cepat untuk bypass kebijakan autoplay browser
+            b.play().then(() => { b.pause(); b.currentTime = 0; }).catch(e => console.log("Audio Biasa ditahan"));
+            s.play().then(() => { s.pause(); s.currentTime = 0; }).catch(e => console.log("Audio SOS ditahan"));
         }
 
         function cekLogin() {
             if(document.getElementById('inputPin').value === "1234") {
-                pancingSuara(); // Wajib dipicu saat klik tombol Login
+                pancingSuara(); 
                 document.getElementById('lock').classList.add('hidden');
                 document.getElementById('dash').classList.remove('hidden');
                 
@@ -73,15 +72,12 @@
                     if (!laporanLama.includes(key)) {
                         const laporan = data[key];
                         
-                        // LOGIKA PEMISAH SUARA
-                        if (laporan.prioritas.includes("SOS")) {
-                            // SUARA DARURAT (SIRINE)
+                        if (laporan.prioritas && laporan.prioritas.includes("SOS")) {
                             const audSOS = document.getElementById('notifSOS');
                             audSOS.currentTime = 0;
                             audSOS.play().catch(e => console.log("Gagal putar SOS"));
-                            alert("⚠️⚠️⚠️ PERINGATAN SOS DARI: " + laporan.nama.toUpperCase());
+                            alert("⚠️⚠️⚠️ PERINGATAN SOS DARI: " + (laporan.nama ? laporan.nama.toUpperCase() : "ANONIM"));
                         } else {
-                            // SUARA BIASA (NOTIFIKASI SANTAI)
                             const audBiasa = document.getElementById('notifBiasa');
                             audBiasa.currentTime = 0;
                             audBiasa.play().catch(e => console.log("Gagal putar Biasa"));
@@ -96,7 +92,20 @@
             });
         }
 
-        function gantiTab(t) { tabSekarang = t; ambilDataBaru(); }
+        function gantiTab(t) { 
+            tabSekarang = t; 
+            const btnA = document.getElementById('tabAktif');
+            const btnS = document.getElementById('tabSelesai');
+            
+            if(t === 'aktif') {
+                btnA.className = "flex-1 py-4 rounded-2xl font-black border-2 border-red-600 bg-red-600";
+                btnS.className = "flex-1 py-4 rounded-2xl font-black border-2 border-slate-700 bg-slate-800 text-slate-400";
+            } else {
+                btnS.className = "flex-1 py-4 rounded-2xl font-black border-2 border-green-600 bg-green-600";
+                btnA.className = "flex-1 py-4 rounded-2xl font-black border-2 border-slate-700 bg-slate-800 text-slate-400";
+            }
+            ambilDataBaru(); 
+        }
 
         function tampilData(list) {
             const dataAktif = list.filter(l => !l.sudahDitangani);
@@ -111,15 +120,15 @@
                 return `
                 <div class="p-6 rounded-[3rem] border-2 bg-slate-800 ${l.sudahDitangani ? 'border-slate-700' : 'border-red-600/40 emergency-glow'}">
                     <div class="flex justify-between mb-4">
-                        <span class="text-[10px] text-slate-500 font-black">${l.waktu}</span>
-                        <span class="text-[9px] px-3 py-1 rounded-full bg-red-600 font-black uppercase">${l.prioritas}</span>
+                        <span class="text-[10px] text-slate-500 font-black">${l.waktu || 'Baru Saja'}</span>
+                        <span class="text-[9px] px-3 py-1 rounded-full bg-red-600 font-black uppercase">${l.prioritas || 'BIASA'}</span>
                     </div>
                     <div class="mb-4">
                         <div class="flex items-center gap-2 mb-1">
-                            <span class="text-[10px] text-red-500 font-black italic">👤 Pelapor: ${l.nama}</span>
+                            <span class="text-[10px] text-red-500 font-black italic">👤 Pelapor: ${l.nama || 'Anonim'}</span>
                             ${waLink ? `<a href="${waLink}" target="_blank" class="bg-green-600 text-[8px] px-2 py-1 rounded-lg font-black">💬 CHAT WA</a>` : ''}
                         </div>
-                        <h3 class="text-2xl font-bold">"${l.teks}"</h3>
+                        <h3 class="text-2xl font-bold">"${l.teks || 'Tidak ada pesan'}"</h3>
                     </div>
                     ${l.suara ? `<div class="mb-4 p-3 bg-slate-900 rounded-2xl border border-slate-700"><p class="text-[8px] mb-2 font-black uppercase text-slate-500">🔊 Rekaman Suara:</p><audio controls class="w-full h-8"><source src="${l.suara}" type="audio/mp3"></audio></div>` : ''}
                     <div class="flex justify-between items-center pt-4 border-t border-slate-700/50">
