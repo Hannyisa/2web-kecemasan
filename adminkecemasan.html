@@ -11,7 +11,7 @@
 </head>
 <body class="bg-[#0f172a] text-white p-8 font-sans">
     
-    <audio id="notifBiasa" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
+    <audio id="notifBiasa" src="https://actions.google.com/sounds/v1/alarms/alarm_clock_ringing_rising.ogg" preload="auto"></audio>
     <audio id="notifSOS" src="https://actions.google.com/sounds/v1/alarms/alarm_clock_ringing_rising.ogg" preload="auto"></audio>
 
     <div id="lock" class="fixed inset-0 bg-[#0f172a] z-50 flex flex-col items-center justify-center">
@@ -42,21 +42,17 @@
         const DB_URL = "https://projectkecemasan-default-rtdb.asia-southeast1.firebasedatabase.app/laporan.json";
 
         function pancingSuara() {
-            // Memaksa browser mengizinkan audio setelah interaksi user
             const b = document.getElementById('notifBiasa');
             const s = document.getElementById('notifSOS');
-            
             b.muted = false;
             s.muted = false;
-            
-            b.play().then(() => { b.pause(); b.currentTime = 0; }).catch(e => console.log("Gagal pancing biasa"));
-            s.play().then(() => { s.pause(); s.currentTime = 0; }).catch(e => console.log("Gagal pancing SOS"));
+            b.play().then(() => { b.pause(); b.currentTime = 0; });
+            s.play().then(() => { s.pause(); s.currentTime = 0; });
         }
 
         function cekLogin() {
             if(document.getElementById('inputPin').value === "1234") {
-                pancingSuara(); // Wajib dipicu klik tombol
-                
+                pancingSuara(); 
                 document.getElementById('lock').classList.add('hidden');
                 document.getElementById('dash').classList.remove('hidden');
                 
@@ -78,16 +74,17 @@
                     if (!laporanLama.includes(key)) {
                         const laporan = data[key];
                         
-                        // LOGIKA SUARA
+                        // SEKARANG SEMUA LAPORAN PAKAI SUARA DARURAT YANG SAMA
                         if (laporan.prioritas.includes("SOS")) {
                             const audSOS = document.getElementById('notifSOS');
                             audSOS.currentTime = 0;
                             audSOS.play();
-                            alert("🚨🚨🚨 PERINGATAN SOS: " + laporan.nama.toUpperCase());
+                            alert("🚨🚨🚨 LAPORAN DARURAT SOS: " + laporan.nama.toUpperCase());
                         } else {
                             const audBiasa = document.getElementById('notifBiasa');
                             audBiasa.currentTime = 0;
                             audBiasa.play();
+                            // Untuk laporan biasa tidak pakai alert agar tidak terlalu mengganggu jika banyak
                         }
                         
                         laporanLama.push(key);
